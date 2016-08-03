@@ -28,6 +28,7 @@ class FileWriter:
         header = struct.pack("<III", t[0], t[1], len(s))
         self.__file.write(header)
         self.__file.write(s)
+        self.__file.flush()
 
 class Capture:
     read_size = 256
