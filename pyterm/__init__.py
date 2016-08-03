@@ -46,6 +46,7 @@ class Capture:
         pid = os.fork()
 
         if pid == 0:
+            os.setsid()
             os.close(master)
             os.dup2(slave, 0)
             os.dup2(slave, 1)
