@@ -6,6 +6,8 @@ import termios
 import time
 import tty
 
+from .exec import ExecWriter
+
 def thetime():
     t = time.time()
     integral = int(t)
