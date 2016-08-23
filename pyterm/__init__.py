@@ -1,7 +1,9 @@
+import fcntl
 import os
 import pty
 import select
 import struct
+import sys
 import termios
 import time
 import tty
@@ -46,10 +48,15 @@ class Capture:
     def run(self):
         master, slave = pty.openpty()
 
+        buf = struct.pack('HHHH', 0, 0, 0, 0)
+        size = fcntl.ioctl(sys.stdin.fileno(), termios.TIOCGWINSZ, buf)
+        fcntl.ioctl(slave, termios.TIOCSWINSZ, size)
+
         pid = os.fork()
 
         if pid == 0:
             os.setsid()
+            result = bytearray(20)
             os.close(master)
             os.dup2(slave, 0)
             os.dup2(slave, 1)
