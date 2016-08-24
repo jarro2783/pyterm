@@ -2,6 +2,7 @@ import fcntl
 import os
 import pty
 import select
+import signal
 import struct
 import sys
 import termios
@@ -41,16 +42,33 @@ class Capture:
         self.__program = program
         self.__writers = writers
 
+        signal.signal(signal.SIGWINCH, self.__window_changed)
+
     def __write(self, s):
         for w in self.__writers:
             w.write(s)
+
+    def __get_window_size(self, fd):
+        buf = struct.pack('HHHH', 0, 0, 0, 0)
+        size = fcntl.ioctl(fd, termios.TIOCGWINSZ, buf)
+        x, y, _, _ = struct.unpack('HHHH', size)
+
+        self.__width = x
+        self.__height = y
+
+    def __set_window_size(self, fd):
+        size = struct.pack('HHHH', self.__width, self.__height, 0, 0)
+        fcntl.ioctl(fd, termios.TIOCSWINSZ, size)
+
+    def __window_changed(self, num, frame):
+        self.__get_window_size(sys.stdin.fileno())
+        self.__set_window_size(self.__master)
     
     def run(self):
         master, slave = pty.openpty()
 
-        buf = struct.pack('HHHH', 0, 0, 0, 0)
-        size = fcntl.ioctl(sys.stdin.fileno(), termios.TIOCGWINSZ, buf)
-        fcntl.ioctl(slave, termios.TIOCSWINSZ, size)
+        self.__get_window_size(sys.stdin.fileno())
+        self.__set_window_size(slave)
 
         pid = os.fork()
 
@@ -66,6 +84,8 @@ class Capture:
             os.exit(1)
         else:
             os.close(slave)
+
+            self.__master = master
 
             term = termios.tcgetattr(0)
             tty.setraw(0)
@@ -83,6 +103,8 @@ class Capture:
                                 s = os.read(master, self.read_size)
                                 os.write(1, s)
                                 self.__write(s)
+                    except InterruptedError:
+                        continue
                     except OSError:
                         break
                 os.waitpid(pid, 0)
