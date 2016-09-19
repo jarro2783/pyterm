@@ -10,6 +10,7 @@ import time
 import tty
 
 from .exec import ExecWriter
+from .exec import ExecWatcher
 
 def thetime():
     t = time.time()
@@ -38,7 +39,7 @@ class FileWriter:
 class Capture:
     read_size = 256
 
-    def __init__(self, program, writers = []):
+    def __init__(self, program, writers=[]):
         self.__program = program
         self.__writers = writers
 
