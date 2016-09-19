@@ -5,13 +5,18 @@ class ExecWriter:
     """Writes to the standard input of a program."""
     def __init__(self, program, *args):
         """Initialise with the program to watch with arguments."""
+
+        for argument in args:
+            if not isinstance(argument, str):
+                raise TypeError("Arguments to exec should be a string")
+
         reader, writer = os.pipe2(0)
         pid = os.fork()
 
         if pid == 0:
             os.close(writer)
-            #os.close(1)
-            #os.close(2)
+            os.close(1)
+            os.close(2)
             os.dup2(reader, 0)
 
             os.execlp(program, program, *args)
