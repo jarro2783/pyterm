@@ -30,6 +30,9 @@ class ExecWriter:
         """Write data to the program."""
         os.write(self.__pipe, s)
 
+    def close(self):
+        os.close(self.__pipe)
+
 class ExecWatcher:
     """Watches the standard output of a program."""
     def __init__(self, program, args):
@@ -55,5 +58,5 @@ class ExecWatcher:
         else:
             os.close(writer)
             while True:
-                result = reader.read()
-                sys.stdout.write(result)
+                result = os.read(reader, 1024)
+                sys.stdout.write(result.decode('utf-8'))

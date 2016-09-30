@@ -36,6 +36,9 @@ class FileWriter:
         self.__file.write(s)
         self.__file.flush()
 
+    def close(self):
+        self.__file.close()
+
 class Capture:
     read_size = 256
 
@@ -98,12 +101,12 @@ class Capture:
 
                         for f in ready:
                             if f == 0:
-                                s = os.read(0, 1)
-                                os.write(master, s)
+                                text = os.read(0, self.read_size)
+                                os.write(master, text)
                             elif f == master:
-                                s = os.read(master, self.read_size)
-                                os.write(1, s)
-                                self.__write(s)
+                                text = os.read(master, self.read_size)
+                                os.write(1, text)
+                                self.__write(text)
                     except InterruptedError:
                         continue
                     except OSError:
@@ -111,3 +114,5 @@ class Capture:
                 os.waitpid(pid, 0)
             finally:
                 termios.tcsetattr(0, termios.TCSAFLUSH, term)
+                for writer in self.__writers:
+                    writer.close()
