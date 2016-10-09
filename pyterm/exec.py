@@ -25,13 +25,17 @@ class ExecWriter:
         else:
             os.close(reader)
             self.__pipe = writer
+            self.__pid = pid
 
     def write(self, s):
         """Write data to the program."""
-        os.write(self.__pipe, s)
+        written = 0
+        while written != len(s):
+            written += os.write(self.__pipe, s[written:])
 
     def close(self):
         os.close(self.__pipe)
+        os.waitpid(self.__pid, 0)
 
 class ExecWatcher:
     """Watches the standard output of a program."""
