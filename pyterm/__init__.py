@@ -39,6 +39,15 @@ class FileWriter:
     def close(self):
         self.__file.close()
 
+def atomic_write(out, data):
+    written = 0
+    while True:
+        try:
+            written += os.write(out, data[written:])
+            break
+        except InterruptedError:
+            continue
+
 class Capture:
     read_size = 256
 
@@ -67,7 +76,7 @@ class Capture:
     def __window_changed(self, num, frame):
         self.__get_window_size(sys.stdin.fileno())
         self.__set_window_size(self.__master)
-    
+
     def run(self):
         master, slave = pty.openpty()
 
@@ -104,10 +113,10 @@ class Capture:
                         for f in ready:
                             if f == 0:
                                 text = os.read(0, self.read_size)
-                                os.write(master, text)
+                                atomic_write(master, text)
                             elif f == master:
                                 text = os.read(master, self.read_size)
-                                os.write(1, text)
+                                atomic_write(1, text)
                                 self.__write(text)
                     except InterruptedError:
                         continue
@@ -115,6 +124,7 @@ class Capture:
                         break
                 os.waitpid(pid, 0)
             finally:
+                os.close(master)
                 termios.tcsetattr(0, termios.TCSAFLUSH, term)
                 for writer in self.__writers:
                     writer.close()
