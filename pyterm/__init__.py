@@ -78,12 +78,14 @@ class Capture:
 
         if pid == 0:
             os.setsid()
-            result = bytearray(20)
             os.close(master)
             os.dup2(slave, 0)
             os.dup2(slave, 1)
             os.dup2(slave, 2)
             os.close(slave)
+
+            fcntl.ioctl(0, termios.TIOCSCTTY, 0)
+
             self.__program.execute()
             os.exit(1)
         else:
