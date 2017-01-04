@@ -51,9 +51,10 @@ def atomic_write(out, data):
 class Capture:
     read_size = 256
 
-    def __init__(self, program, writers=[]):
+    def __init__(self, program, idle_time, writers=[]):
         self.__program = program
         self.__writers = writers
+        self.__idle_time = idle_time
 
         signal.signal(signal.SIGWINCH, self.__window_changed)
 
@@ -85,6 +86,8 @@ class Capture:
 
         pid = os.fork()
 
+        idle_intervals = 0
+
         if pid == 0:
             os.setsid()
             os.close(master)
@@ -108,11 +111,18 @@ class Capture:
                 while True:
 
                     try:
-                        ready, _, _ = select.select([0, master], [], [])
+                        ready, _, _ = select.select([0, master], [], [], 60)
+
+                        if len(ready) == 0:
+                            idle_intervals += 1
+
+                            if idle_intervals >= self.__idle_time:
+                                break
 
                         for f in ready:
                             if f == 0:
                                 text = os.read(0, self.read_size)
+                                idle_intervals = 0
                                 atomic_write(master, text)
                             elif f == master:
                                 text = os.read(master, self.read_size)
@@ -122,9 +132,9 @@ class Capture:
                         continue
                     except OSError:
                         break
+                os.close(master)
                 os.waitpid(pid, 0)
             finally:
-                os.close(master)
                 termios.tcsetattr(0, termios.TCSAFLUSH, term)
                 for writer in self.__writers:
                     writer.close()
