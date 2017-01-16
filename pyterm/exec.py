@@ -47,13 +47,14 @@ class ExecWatcher:
     def watch(self):
         """Watches the specified program and prints to standard out."""
         reader, writer = os.pipe2(0)
+
         pid = os.fork()
 
         # In the child
         if pid == 0:
             os.close(reader)
-            os.close(0)
             os.close(2)
+
             os.dup2(writer, 1)
 
             os.execlp(self.__program, self.__program, *self.__args)
@@ -61,9 +62,9 @@ class ExecWatcher:
             sys.exit(1)
         else:
             os.close(writer)
+
             while True:
                 result = os.read(reader, 1024)
-
                 if len(result) == 0:
                     break
                 sys.stdout.write(result.decode('utf-8'))
