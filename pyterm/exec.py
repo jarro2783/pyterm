@@ -63,4 +63,9 @@ class ExecWatcher:
             os.close(writer)
             while True:
                 result = os.read(reader, 1024)
+
+                if len(result) == 0:
+                    break
                 sys.stdout.write(result.decode('utf-8'))
+
+            os.waitpid(pid, 0)
