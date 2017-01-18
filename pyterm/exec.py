@@ -1,5 +1,6 @@
 import os
 import sys
+import tty
 
 class ExecWriter:
     """Writes to the standard input of a program."""
@@ -52,6 +53,7 @@ class ExecWatcher:
 
         # In the child
         if pid == 0:
+            tty.setraw(0)
             os.close(reader)
             os.close(2)
 
